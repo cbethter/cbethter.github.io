@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pontuação do Currículo Lattes</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --ink: #1c1915;
+    --muted: #5e584f;
+    --line: #e4ddd0;
+    --card: #fffdf8;
+    --accent: #1f4d3a;
+    --accent-2: #c4a15a;
+    --warn: #8a4b12;
+    --ok: #1f4d3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  header {
+    background: var(--accent);
+    color: #f7f3ea;
+    padding: 28px 20px 22px;
+  }
+  header h1 { margin: 0 0 6px; font-size: 1.55rem; font-weight: 650; }
+  header p { margin: 0; max-width: 68ch; color: #e7efe9; }
+  main { max-width: 980px; margin: 0 auto; padding: 22px 16px 64px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin: 14px 0;
+  }
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  h3 { font-size: 1rem; margin: 16px 0 8px; }
+  ol, ul { margin: 8px 0 0; padding-left: 1.2rem; }
+  .muted { color: var(--muted); }
+  .privacy {
+    border-left: 4px solid var(--accent-2);
+    background: #fbf6ea;
+  }
+  label { display: block; font-size: 0.92rem; margin-bottom: 4px; }
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    background: #fff;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .drop {
+    border: 1.5px dashed #b7ad9b;
+    border-radius: 12px;
+    padding: 22px;
+    text-align: center;
+    background: #faf7f1;
+  }
+  .drop.over { border-color: var(--accent); background: #eef5f1; }
+  button, .file-btn {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+  button.ghost, .file-btn.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.8rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .total { font-size: 1.35rem; font-weight: 700; }
+  .peso { width: 88px; }
+  details summary { cursor: pointer; font-weight: 650; }
+  .item { margin: 0 0 6px; }
+  .erro { color: #8d1d1d; }
+  footer { color: var(--muted); font-size: 0.85rem; margin-top: 18px; }
+  @media (max-width: 700px) { .row { grid-template-columns: 1fr; } }
+  @media print {
+    header, .no-print, footer, details { display: none !important; }
+    body { background: #fff; }
+    .card { border: 0; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pontuação do Currículo Lattes</h1>
+  <p>O professor baixa o próprio XML na Plataforma Lattes e abre o arquivo aqui. A contagem e a pontuação acontecem neste navegador. O currículo não é enviado a nenhum servidor.</p>
+</header>
+<main>
+  <section class="card privacy">
+    <h2>Privacidade</h2>
+    <p>Nada é gravado fora deste computador. Fechar a aba apaga o currículo da memória. Os pesos ajustados na tabela ficam só neste navegador, em <code>localStorage</code>, para a coordenação testar a régua antes de publicar o arquivo.</p>
+  </section>
+
+  <section class="card no-print">
+    <h2>Como o professor gera o XML</h2>
+    <ol>
+      <li>Acesse <a href="https://lattes.cnpq.br/" target="_blank" rel="noopener">lattes.cnpq.br</a> e entre com a conta Gov.br.</li>
+      <li>Abra o próprio currículo e use o ícone de exportar. Escolha <strong>baixar currículo em XML</strong>.</li>
+      <li>O CNPq entrega um <code>.zip</code>. Pode enviar o zip direto, ou extrair e enviar o <code>curriculo.xml</code>.</li>
+    </ol>
+  </section>
+
+  <section class="card no-print">
+    <h2>Arquivo e período</h2>
+    <div class="drop" id="drop">
+      <p>Arraste o <strong>.zip</strong> ou o <strong>.xml</strong> para cá, ou escolha o arquivo.</p>
+      <div class="actions" style="justify-content:center">
+        <label class="file-btn">
+          Escolher arquivo
+          <input id="arquivo" type="file" accept=".xml,.zip,application/xml,application/zip" hidden>
+        </label>
+        <button type="button" class="ghost" id="exemplo">Carregar exemplo</button>
+      </div>
+      <p class="muted" id="nome-arquivo">Nenhum arquivo selecionado.</p>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div>
+        <label for="ano-ini">Ano inicial (inclusive)</label>
+        <input id="ano-ini" type="number" min="1950" max="2100" value="2021">
+      </div>
+      <div>
+        <label for="ano-fim">Ano final (inclusive)</label>
+        <input id="ano-fim" type="number" min="1950" max="2100" value="2024">
+      </div>
+    </div>
+    <p class="muted">Itens sem ano legível entram na conta e aparecem marcados. Ajuste o quadriênio do edital antes de divulgar o link.</p>
+  </section>
+
+  <section class="card" id="resultado" hidden>
+    <h2 id="titulo-docente">Resultado</h2>
+    <p class="muted" id="meta-docente"></p>
+    <p class="total">Total no período: <span id="total">0</span> pontos</p>
+    <div class="actions no-print">
+      <button type="button" id="baixar">Baixar relatório HTML</button>
+      <button type="button" class="ghost" id="imprimir">Imprimir</button>
+    </div>
+    <h3>Resumo</h3>
+    <table>
+      <thead>
+        <tr><th>Item</th><th class="num">Quantidade</th><th class="num">Peso</th><th class="num">Pontos</th></tr>
+      </thead>
+      <tbody id="resumo"></tbody>
+    </table>
+    <h3>Itens contados</h3>
+    <div id="detalhe"></div>
+  </section>
+
+  <section class="card no-print">
+    <details>
+      <summary>Régua de pontos (edite antes de publicar)</summary>
+      <p class="muted">Estes pesos são um exemplo. A coordenação altera os valores e o intervalo de anos no arquivo <code>pontuacao-lattes.html</code>, no bloco <code>PESOS_PADRAO</code>, para que todo professor veja a mesma régua. A tabela abaixo só muda a conta neste navegador.</p>
+      <table>
+        <thead>
+          <tr><th>Item</th><th class="num">Peso</th></tr>
+        </thead>
+        <tbody id="pesos"></tbody>
+      </table>
+      <div class="actions">
+        <button type="button" class="ghost" id="restaurar">Restaurar pesos do arquivo</button>
+      </div>
+    </details>
+  </section>
+
+  <p class="erro" id="erro" hidden></p>
+  <footer>
+    Contagem local do XML exportado pelo próprio docente. Não substitui a conferência do edital nem a classificação Qualis: periódico entra pelo tipo de produção, não pelo estrato.
+  </footer>
+</main>
+<script>
+/* Régua publicada. Altere aqui antes de colocar a página no ar. */
+const PESOS_PADRAO = [
+  { id: "artigo", nome: "Artigo publicado", peso: 10 },
+  { id: "artigo_aceito", nome: "Artigo aceito", peso: 6 },
+  { id: "trabalho_completo", nome: "Trabalho completo em evento", peso: 4 },
+  { id: "resumo", nome: "Resumo em evento", peso: 1 },
+  { id: "livro", nome: "Livro publicado", peso: 15 },
+  { id: "livro_org", nome: "Livro organizado", peso: 8 },
+  { id: "capitulo", nome: "Capítulo de livro", peso: 6 },
+  { id: "texto_jornal", nome: "Texto em jornal ou revista", peso: 1 },
+  { id: "software", nome: "Software", peso: 5 },
+  { id: "patente", nome: "Patente", peso: 15 },
+  { id: "produto", nome: "Produto tecnológico", peso: 8 },
+  { id: "ori_dout", nome: "Orientação de doutorado concluída", peso: 12 },
+  { id: "ori_mest", nome: "Orientação de mestrado concluída", peso: 8 },
+  { id: "ori_posdoc", nome: "Supervisão de pós-doutorado concluída", peso: 6 },
+  { id: "ori_ic", nome: "Orientação de IC concluída", peso: 2 },
+  { id: "ori_grad", nome: "Orientação de graduação concluída", peso: 1 },
+  { id: "ori_and_dout", nome: "Orientação de doutorado em andamento", peso: 4 },
+  { id: "ori_and_mest", nome: "Orientação de mestrado em andamento", peso: 3 },
+  { id: "banca_dout", nome: "Banca de doutorado", peso: 3 },
+  { id: "banca_mest", nome: "Banca de mestrado", peso: 2 },
+  { id: "banca_qual", nome: "Banca de qualificação", peso: 1 },
+  { id: "projeto", nome: "Projeto de pesquisa", peso: 3 }
+];
+
+const REGRAS = [
+  { id: "artigo", tags: ["ARTIGO-PUBLICADO"], titulo: ["TITULO-DO-ARTIGO"], extra: ["TITULO-DO-PERIODICO-OU-REVISTA"] },
+  { id: "artigo_aceito", tags: ["ARTIGO-ACEITO-PARA-PUBLICACAO"], titulo: ["TITULO-DO-ARTIGO"], extra: ["TITULO-DO-PERIODICO-OU-REVISTA"] },
+  { id: "trabalho_completo", tags: ["TRABALHO-EM-EVENTOS"], titulo: ["TITULO-DO-TRABALHO"], extra: ["NOME-DO-EVENTO", "TITULO-DOS-ANAIS-OU-PROCEEDINGS"], quando: (el) => !/RESUMO/i.test(attr(el, "NATUREZA")) },
+  { id: "resumo", tags: ["TRABALHO-EM-EVENTOS"], titulo: ["TITULO-DO-TRABALHO"], extra: ["NOME-DO-EVENTO"], quando: (el) => /RESUMO/i.test(attr(el, "NATUREZA")) },
+  { id: "livro", tags: ["LIVRO-PUBLICADO-OU-ORGANIZADO"], titulo: ["TITULO-DO-LIVRO"], quando: (el) => !/ORGANIZ/i.test(attr(el, "TIPO")) },
+  { id: "livro_org", tags: ["LIVRO-PUBLICADO-OU-ORGANIZADO"], titulo: ["TITULO-DO-LIVRO"], quando: (el) => /ORGANIZ/i.test(attr(el, "TIPO")) },
+  { id: "capitulo", tags: ["CAPITULO-DE-LIVRO-PUBLICADO"], titulo: ["TITULO-DO-CAPITULO-DO-LIVRO"], extra: ["TITULO-DO-LIVRO"] },
+  { id: "texto_jornal", tags: ["TEXTO-EM-JORNAL-OU-REVISTA"], titulo: ["TITULO-DO-TEXTO"], extra: ["TITULO-DO-JORNAL-OU-REVISTA"] },
+  { id: "software", tags: ["SOFTWARE"], titulo: ["TITULO-DO-SOFTWARE"] },
+  { id: "patente", tags: ["PATENTE"], titulo: ["TITULO-DA-PATENTE", "TITULO"] },
+  { id: "produto", tags: ["PRODUTO-TECNOLOGICO"], titulo: ["TITULO-DO-PRODUTO", "TITULO"] },
+  { id: "ori_dout", tags: ["ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO", "ORIENTACAO-CONCLUIDA-PARA-DOUTORADO"], titulo: ["TITULO"] },
+  { id: "ori_mest", tags: ["ORIENTACOES-CONCLUIDAS-PARA-MESTRADO", "ORIENTACAO-CONCLUIDA-PARA-MESTRADO"], titulo: ["TITULO"] },
+  { id: "ori_posdoc", tags: ["ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO", "ORIENTACAO-CONCLUIDA-PARA-POS-DOUTORADO"], titulo: ["TITULO"] },
+  { id: "ori_ic", tags: ["OUTRAS-ORIENTACOES-CONCLUIDAS"], titulo: ["TITULO"], quando: (el) => /INICIACAO|CIENTIFICA/i.test(attr(el, "NATUREZA") + " " + texto(el)) },
+  { id: "ori_grad", tags: ["ORIENTACOES-CONCLUIDAS-PARA-GRADUACAO", "ORIENTACAO-CONCLUIDA-PARA-GRADUACAO"], titulo: ["TITULO"] },
+  { id: "ori_and_dout", tags: ["ORIENTACAO-EM-ANDAMENTO-DE-DOUTORADO"], titulo: ["TITULO-DO-TRABALHO", "TITULO"] },
+  { id: "ori_and_mest", tags: ["ORIENTACAO-EM-ANDAMENTO-DE-MESTRADO"], titulo: ["TITULO-DO-TRABALHO", "TITULO"] },
+  { id: "banca_dout", tags: ["PARTICIPACAO-EM-BANCA-DE-DOUTORADO"], titulo: ["TITULO"] },
+  { id: "banca_mest", tags: ["PARTICIPACAO-EM-BANCA-DE-MESTRADO"], titulo: ["TITULO"] },
+  { id: "banca_qual", tags: ["PARTICIPACAO-EM-BANCA-DE-EXAME-QUALIFICACAO"], titulo: ["TITULO"] },
+  { id: "projeto", tags: ["PROJETO-DE-PESQUISA"], titulo: ["NOME-DO-PROJETO"] }
+];
+
+const $ = (id) => document.getElementById(id);
+let ultimo = null;
+let xmlFonte = "";
+
+function pesosAtuais() {
+  try {
+    const salvo = JSON.parse(localStorage.getItem("pesos-lattes") || "null");
+    if (!Array.isArray(salvo)) return PESOS_PADRAO.map((p) => ({ ...p }));
+    return PESOS_PADRAO.map((p) => {
+      const achou = salvo.find((s) => s.id === p.id);
+      return { ...p, peso: achou ? Number(achou.peso) || 0 : p.peso };
+    });
+  } catch {
+    return PESOS_PADRAO.map((p) => ({ ...p }));
+  }
+}
+
+function desenharPesos() {
+  const pesos = pesosAtuais();
+  $("pesos").innerHTML = pesos.map((p) =>
+    `<tr><td>${p.nome}</td><td class="num"><input class="peso" data-id="${p.id}" type="number" step="0.5" value="${p.peso}"></td></tr>`
+  ).join("");
+  document.querySelectorAll(".peso").forEach((input) => {
+    input.addEventListener("change", () => {
+      const atuais = pesosAtuais();
+      const item = atuais.find((p) => p.id === input.dataset.id);
+      if (item) item.peso = Number(input.value) || 0;
+      localStorage.setItem("pesos-lattes", JSON.stringify(atuais));
+      if (ultimo) render(ultimo);
+    });
+  });
+}
+
+function all(doc, name) {
+  const direto = Array.from(doc.getElementsByTagName(name));
+  if (direto.length) return direto;
+  return Array.from(doc.getElementsByTagNameNS("*", name));
+}
+
+function attr(el, nome) {
+  if (el.hasAttribute(nome)) return el.getAttribute(nome) || "";
+  for (const filho of el.getElementsByTagName("*")) {
+    if (filho.hasAttribute(nome)) return filho.getAttribute(nome) || "";
+  }
+  return "";
+}
+
+function texto(el) {
+  return (el.textContent || "").slice(0, 240);
+}
+
+function anoDe(el) {
+  const alvos = [el, ...Array.from(el.getElementsByTagName("*")).slice(0, 8)];
+  for (const n of alvos) {
+    for (const a of Array.from(n.attributes || [])) {
+      if (!/ANO/i.test(a.name)) continue;
+      const y = parseInt(a.value, 10);
+      if (y >= 1950 && y <= 2100) return y;
+    }
+  }
+  return null;
+}
+
+function tituloDe(el, chaves) {
+  for (const chave of chaves) {
+    const valor = attr(el, chave);
+    if (valor) return valor;
+  }
+  return "(sem título)";
+}
+
+function noPeriodo(ano, ini, fim) {
+  if (ano == null) return true;
+  return ano >= ini && ano <= fim;
+}
+
+function analisar(xml) {
+  xmlFonte = xml;
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("O arquivo não é um XML válido de currículo Lattes.");
+  const raiz = doc.documentElement;
+  if (!raiz || !/CURRICULO-VITAE/i.test(raiz.tagName)) {
+    throw new Error("Não encontrei a raiz CURRICULO-VITAE. Envie o XML exportado no Lattes, não o HTML da página.");
+  }
+  const ini = Number($("ano-ini").value) || 0;
+  const fim = Number($("ano-fim").value) || 9999;
+  const grupos = {};
+  for (const regra of REGRAS) {
+    const vistos = new Set();
+    const itens = [];
+    for (const tag of regra.tags) {
+      for (const el of all(doc, tag)) {
+        if (vistos.has(el)) continue;
+        if (regra.quando && !regra.quando(el)) continue;
+        vistos.add(el);
+        const ano = anoDe(el);
+        if (!noPeriodo(ano, ini, fim)) continue;
+        const extra = (regra.extra || []).map((k) => attr(el, k)).filter(Boolean).join(" · ");
+        itens.push({ ano, titulo: tituloDe(el, regra.titulo), extra });
+      }
+    }
+    grupos[regra.id] = itens;
+  }
+  const dados = all(doc, "DADOS-GERAIS")[0];
+  return {
+    nome: dados ? (dados.getAttribute("NOME-COMPLETO") || "Docente") : "Docente",
+    id: raiz.getAttribute("NUMERO-IDENTIFICADOR") || "",
+    atualizacao: raiz.getAttribute("DATA-ATUALIZACAO") || "",
+    grupos
+  };
+}
+
+function render(dados) {
+  ultimo = dados;
+  const pesos = pesosAtuais();
+  let total = 0;
+  const linhas = [];
+  const blocos = [];
+  for (const p of pesos) {
+    const itens = dados.grupos[p.id] || [];
+    const pontos = itens.length * p.peso;
+    total += pontos;
+    linhas.push(`<tr><td>${p.nome}</td><td class="num">${itens.length}</td><td class="num">${p.peso}</td><td class="num">${pontos}</td></tr>`);
+    if (!itens.length) continue;
+    const lis = itens
+      .sort((a, b) => (b.ano || 0) - (a.ano || 0))
+      .map((it) => `<p class="item"><strong>${it.ano || "s/ano"}</strong> — ${escapeHtml(it.titulo)}${it.extra ? " <span class='muted'>(" + escapeHtml(it.extra) + ")</span>" : ""}</p>`)
+      .join("");
+    blocos.push(`<h3>${p.nome} (${itens.length})</h3>${lis}`);
+  }
+  $("titulo-docente").textContent = dados.nome;
+  $("meta-docente").textContent = [
+    dados.id ? "ID Lattes " + dados.id : "",
+    dados.atualizacao ? "XML atualizado em " + dados.atualizacao : "",
+    "Período " + $("ano-ini").value + "–" + $("ano-fim").value
+  ].filter(Boolean).join(" · ");
+  $("total").textContent = String(total);
+  $("resumo").innerHTML = linhas.join("");
+  $("detalhe").innerHTML = blocos.join("") || "<p class='muted'>Nenhum item no período.</p>";
+  $("resultado").hidden = false;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => {
+    if (c === "&") return "&" + "amp;";
+    if (c === "<") return "&" + "lt;";
+    if (c === ">") return "&" + "gt;";
+    if (c === '"') return "&" + "quot;";
+    return "&" + "#39;";
+  });
+}
+
+async function lerArquivo(file) {
+  $("erro").hidden = true;
+  $("nome-arquivo").textContent = file.name;
+  const buf = await file.arrayBuffer();
+  let xml;
+  if (file.name.toLowerCase().endsWith(".zip") || pareceZip(buf)) xml = await xmlDoZip(buf);
+  else xml = decodificar(buf);
+  render(analisar(xml));
+}
+
+function pareceZip(buf) {
+  const b = new Uint8Array(buf);
+  return b[0] === 0x50 && b[1] === 0x4b;
+}
+
+function decodificar(buf) {
+  const head = new TextDecoder("iso-8859-1").decode(buf.slice(0, 180));
+  const m = /encoding=["']([^"']+)["']/i.exec(head);
+  const enc = (m && m[1].toLowerCase()) || "iso-8859-1";
+  try { return new TextDecoder(enc).decode(buf); }
+  catch { return new TextDecoder("iso-8859-1").decode(buf); }
+}
+
+async function xmlDoZip(buf) {
+  const view = new DataView(buf);
+  const bytes = new Uint8Array(buf);
+  let offset = 0;
+  while (offset + 30 < bytes.length) {
+    if (view.getUint32(offset, true) !== 0x04034b50) break;
+    const method = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const nameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+    const nome = new TextDecoder().decode(bytes.slice(offset + 30, offset + 30 + nameLen));
+    const start = offset + 30 + nameLen + extraLen;
+    const fatia = bytes.slice(start, start + compSize);
+    offset = start + compSize;
+    if (!/\.xml$/i.test(nome)) continue;
+    if (method === 0) return decodificar(fatia.buffer);
+    if (method === 8) {
+      if (typeof DecompressionStream === "undefined") {
+        throw new Error("Este navegador não abre o ZIP. Extraia o curriculo.xml e envie o XML.");
+      }
+      const ds = new DecompressionStream("deflate-raw");
+      const stream = new Blob([fatia]).stream().pipeThrough(ds);
+      const out = await new Response(stream).arrayBuffer();
+      return decodificar(out);
+    }
+  }
+  throw new Error("Não achei curriculo.xml dentro do ZIP.");
+}
+
+const EXEMPLO = `<?xml version="1.0" encoding="UTF-8"?>
+<CURRICULO-VITAE NUMERO-IDENTIFICADOR="0000000000000000" DATA-ATUALIZACAO="01102026">
+  <DADOS-GERAIS NOME-COMPLETO="Docente Exemplo">
+    <ATUACOES-PROFISSIONAIS><ATUACAO-PROFISSIONAL>
+      <ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO><PARTICIPACAO-EM-PROJETO>
+        <PROJETO-DE-PESQUISA ANO-INICIO="2022" NOME-DO-PROJETO="Projeto de demonstração"/>
+      </PARTICIPACAO-EM-PROJETO></ATIVIDADES-DE-PARTICIPACAO-EM-PROJETO>
+    </ATUACAO-PROFISSIONAL></ATUACOES-PROFISSIONAIS>
+  </DADOS-GERAIS>
+  <PRODUCAO-BIBLIOGRAFICA>
+    <ARTIGOS-PUBLICADOS><ARTIGO-PUBLICADO>
+      <DADOS-BASICOS-DO-ARTIGO TITULO-DO-ARTIGO="Artigo de exemplo" ANO-DO-ARTIGO="2023" NATUREZA="COMPLETO"/>
+      <DETALHAMENTO-DO-ARTIGO TITULO-DO-PERIODICO-OU-REVISTA="Revista Exemplo"/>
+    </ARTIGO-PUBLICADO></ARTIGOS-PUBLICADOS>
+    <TRABALHOS-EM-EVENTOS>
+      <TRABALHO-EM-EVENTOS>
+        <DADOS-BASICOS-DO-TRABALHO TITULO-DO-TRABALHO="Trabalho completo" ANO-DO-TRABALHO="2022" NATUREZA="COMPLETO"/>
+      </TRABALHO-EM-EVENTOS>
+      <TRABALHO-EM-EVENTOS>
+        <DADOS-BASICOS-DO-TRABALHO TITULO-DO-TRABALHO="Resumo de congresso" ANO-DO-TRABALHO="2024" NATUREZA="RESUMO"/>
+      </TRABALHO-EM-EVENTOS>
+    </TRABALHOS-EM-EVENTOS>
+    <LIVROS-E-CAPITULOS>
+      <LIVROS-PUBLICADOS-OU-ORGANIZADOS><LIVRO-PUBLICADO-OU-ORGANIZADO>
+        <DADOS-BASICOS-DO-LIVRO TITULO-DO-LIVRO="Livro de exemplo" ANO="2021" TIPO="LIVRO_PUBLICADO"/>
+      </LIVRO-PUBLICADO-OU-ORGANIZADO></LIVROS-PUBLICADOS-OU-ORGANIZADOS>
+      <CAPITULOS-DE-LIVROS-PUBLICADOS><CAPITULO-DE-LIVRO-PUBLICADO>
+        <DADOS-BASICOS-DO-CAPITULO TITULO-DO-CAPITULO-DO-LIVRO="Capítulo de exemplo" ANO="2023"/>
+      </CAPITULO-DE-LIVRO-PUBLICADO></CAPITULOS-DE-LIVROS-PUBLICADOS>
+    </LIVROS-E-CAPITULOS>
+  </PRODUCAO-BIBLIOGRAFICA>
+  <OUTRA-PRODUCAO><ORIENTACOES-CONCLUIDAS>
+    <ORIENTACOES-CONCLUIDAS-PARA-MESTRADO>
+      <DADOS-BASICOS-DE-ORIENTACOES-CONCLUIDAS-PARA-MESTRADO TITULO="Dissertação de exemplo" ANO="2022"/>
+    </ORIENTACOES-CONCLUIDAS-PARA-MESTRADO>
+  </ORIENTACOES-CONCLUIDAS></OUTRA-PRODUCAO>
+  <DADOS-COMPLEMENTARES>
+    <PARTICIPACAO-EM-BANCA><PARTICIPACAO-EM-BANCA-DE-MESTRADO>
+      <DADOS-BASICOS-DA-PARTICIPACAO-EM-BANCA-DE-MESTRADO TITULO="Banca de exemplo" ANO="2024"/>
+    </PARTICIPACAO-EM-BANCA-DE-MESTRADO></PARTICIPACAO-EM-BANCA>
+  </DADOS-COMPLEMENTARES>
+</CURRICULO-VITAE>`;
+
+$("arquivo").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) lerArquivo(file).catch(mostrarErro);
+});
+$("exemplo").addEventListener("click", () => {
+  $("nome-arquivo").textContent = "exemplo embutido";
+  try { render(analisar(EXEMPLO)); }
+  catch (err) { mostrarErro(err); }
+});
+["ano-ini", "ano-fim"].forEach((id) => {
+  $(id).addEventListener("change", () => {
+    if (!xmlFonte) return;
+    try { render(analisar(xmlFonte)); }
+    catch (err) { mostrarErro(err); }
+  });
+});
+$("restaurar").addEventListener("click", () => {
+  localStorage.removeItem("pesos-lattes");
+  desenharPesos();
+  if (ultimo) render(ultimo);
+});
+$("imprimir").addEventListener("click", () => window.print());
+$("baixar").addEventListener("click", () => {
+  const html = `<!DOCTYPE html><html lang="pt-BR"><meta charset="utf-8"><title>Relatório Lattes</title><body>${$("resultado").innerHTML}</body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  a.download = "relatorio-lattes.html";
+  a.click();
+});
+
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) lerArquivo(file).catch(mostrarErro);
+});
+
+function mostrarErro(err) {
+  $("erro").hidden = false;
+  $("erro").textContent = err.message || String(err);
+}
+
+desenharPesos();
+</script>
+</body>
+</html>
